@@ -4,16 +4,21 @@ const Users = require('./userDb');
 const router = express.Router();
 
 //postUser
-router.post('/', (req, res) => {
+router.post('/', validateUser, (req, res) => {
     const { name } = req.body;
+    //const {user_id } = req.user.id;
     if( !name ) {
         res.status(400).json({
-            alert: "Alert! Provide name!"
+            message: "Alert! Provide name!"
         });
     }
     else {
 
-        Users.insert(name)
+        Users.insert(
+        //    {
+            name
+        //     user_id }
+             )
         .then(user => { 
             res.status(201).json(user);
         })
@@ -152,6 +157,31 @@ router.put('/:id', (req, res) => {
 
 //custom middleware
 
+//ifiok
+function validateUserId(req, res, next) { 
+    const { id } = req.params;
+    Users.getById(id)
+    .then(user => { 
+        if(user){   
+         req.user = user;
+         next()
+        }
+        else { 
+            res.status(400).json({
+                message: "User ID must be valid"
+            })
+
+        }
+    })
+    .catch(error => {
+        res.status(500).json({
+            message: "Unable to verify user id:" +
+            error.message
+        })
+    })
+}
+
+/*
 function validateUserId(req, res, next) {
     const { id } = req.params;
 
@@ -163,11 +193,22 @@ function validateUserId(req, res, next) {
         });
     }
 }
+*/
 
 function validateUser(req, res, next) {
-
-
-};
+    if (Object.keys(req.body).length) {
+        if(req.body.name) {
+            next();
+        }
+    }
+    
+    else 
+    {
+        res.status(400).json({
+            message: "name required"
+        })
+    }
+}
 
 function validatePost(req, res, next) {
 
