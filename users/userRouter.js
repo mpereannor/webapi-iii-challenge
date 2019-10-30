@@ -6,34 +6,21 @@ const router = express.Router();
 //postUser
 router.post('/', validateUser, (req, res) => {
     const { name } = req.body;
-    //const {user_id } = req.user.id;
-    if( !name ) {
-        res.status(400).json({
-            message: "Alert! Provide name!"
-        });
-    }
-    else {
-
-        Users.insert(
-        //    {
-            name
-        //     user_id }
-             )
-        .then(user => { 
-            res.status(201).json(user);
+    
+    Users.insert(name)
+    .then(user => { 
+        res.status(201).json(user);
+    })
+    .catch(error => { 
+        res.status(500).json({
+            message: `Error creating user`,
+            error
         })
-        .catch(error => { 
-            res.status(500).json({
-                message: `Error creating user`,
-                error
-            })
-        })
-    }
-
+    })
 });
 
 //postUserID
-router.post('/:id/posts', validateUserId, (req, res) => {
+router.post('/:id/posts', validateUserId, validatePost,(req, res) => {
     const { id } = req.params;
     Users.insert(id)
     .then(user => {
@@ -60,8 +47,12 @@ router.get('/', (req, res) => {
 
 });
 
-//getUserId
-router.get('/:id', (req, res) => {
+
+
+//router.get('/:id, validateUserId, (req, res) { 
+    //res.json(req.user)
+//})
+router.get('/:id', validateUserId, (req, res) => {
     const { id } = req.params;
     Users.getById(id)
     .then(users => { 
@@ -81,7 +72,7 @@ router.get('/:id', (req, res) => {
 });
 
 //getUserPostById
-router.get('/:id/posts', (req, res) => {
+router.get('/:id/posts', validateUserId, (req, res) => {
     const { id } = req.params;
     Users.getUserPosts(id)
     .then(users => { 
@@ -103,20 +94,17 @@ router.get('/:id/posts', (req, res) => {
 
 
 //deleteUserById
-router.delete('/:id', (req, res) => {
+router.delete('/:id', validateUserId, (req, res) => {
     const { id } = req.params;
     
     Users.remove(id)
     .then( count => { 
-        return (count > 0)
-        ?
-        res.status(200).json({
-            message: "User successfully deleted"
-        })
-        :
-        res.status(404).json({
-            message: "The user with the specified ID does not exist"
-        })
+        if (count > 0) {
+        
+            res.status(200).json({
+                message: "User successfully deleted"
+            })
+        }
     })
     .catch(error => {
         res.status(500).json({ 
@@ -127,11 +115,10 @@ router.delete('/:id', (req, res) => {
 });
 
 //updateUserbyId
-router.put('/:id', (req, res) => {
-    const changes = req.body;
-    const { text } = changes;
+router.put('/:id', validateUserId, validateUser,  (req, res) => {
+    const { text } = req.body;
     const { id } = req.params;
-    Users.update(id, changes)
+    Users.update(id, text)
     .then(users => { 
         if(users) {
             res.status(200).json(users);
@@ -157,7 +144,6 @@ router.put('/:id', (req, res) => {
 
 //custom middleware
 
-//ifiok
 function validateUserId(req, res, next) { 
     const { id } = req.params;
     Users.getById(id)
@@ -181,29 +167,13 @@ function validateUserId(req, res, next) {
     })
 }
 
-/*
-function validateUserId(req, res, next) {
-    const { id } = req.params;
-
-    if(parseInt(id) > 0) { 
-        next();
-    } else { 
-        res.status(400).json({
-            message: "User ID must be valid number"
-        });
-    }
-}
-*/
-
 function validateUser(req, res, next) {
     if (Object.keys(req.body).length) {
         if(req.body.name) {
             next();
         }
     }
-    
-    else 
-    {
+    else {
         res.status(400).json({
             message: "name required"
         })
@@ -211,7 +181,16 @@ function validateUser(req, res, next) {
 }
 
 function validatePost(req, res, next) {
-
-};
+    if (Object.keys(req.body).length) { 
+        if(req.body.text){
+            next();
+        }
+    }
+    else{
+        res.status(400).json({
+            message: "text required"
+        })
+    }
+}
 
 module.exports = router;
